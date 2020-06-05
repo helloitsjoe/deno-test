@@ -45,7 +45,8 @@ export const updateHero: RouterMiddleware = async (
     return;
   }
 
-  const { value: newHeroData } = await request.body();
+  const body = await request.body();
+  const newHeroData = body.value;
 
   if (!newHeroData) {
     response.status = 400;
