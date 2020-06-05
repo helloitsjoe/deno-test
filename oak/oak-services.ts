@@ -24,7 +24,7 @@ export const addHero: RouterMiddleware = async ({ request, response }) => {
   const body = await request.body();
   const newData = body.value;
 
-  if (!newData) {
+  if (!newData || !Object.keys(newData).length) {
     response.status = 400;
     response.body = { message: "No data" };
     return;

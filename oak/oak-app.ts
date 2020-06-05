@@ -8,7 +8,12 @@ import {
   deleteHero,
 } from "./oak-services.ts";
 
-const port = 3000;
+export interface App {
+  open: () => Promise<void>;
+  close: () => Promise<void>;
+}
+
+const PORT = 3000;
 
 const router = new Router();
 
@@ -19,13 +24,29 @@ router.get("/", getIndex)
   .put("/hero/:id", updateHero)
   .delete("/hero/:id", deleteHero);
 
-const app = new Application();
-app.use(router.routes());
-app.use(router.allowedMethods());
+export const makeApp = ({ port = PORT, shouldLogUrl = true }): App => {
+  const app = new Application();
+  app.use(router.routes());
+  app.use(router.allowedMethods());
 
-app.addEventListener("listen", ({ hostname, port, secure }) => {
-  const protocol = secure ? "https://" : "http://";
-  console.log(`Listening on ${protocol}${hostname ?? "localhost"}:${port}`);
-});
+  if (shouldLogUrl) {
+    app.addEventListener("listen", ({ hostname, port, secure }) => {
+      const protocol = secure ? "https://" : "http://";
+      console.log(`Listening on ${protocol}${hostname ?? "localhost"}:${port}`);
+    });
+  }
 
-await app.listen({ port });
+  // Helper for closing server
+  const controller = new AbortController();
+  const { signal } = controller;
+
+  const listenPromise = app.listen({ port, signal });
+
+  const open = () => listenPromise;
+  const close = () => {
+    controller.abort();
+    return listenPromise;
+  };
+
+  return { open, close };
+};
