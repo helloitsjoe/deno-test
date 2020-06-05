@@ -13,9 +13,9 @@ const port = 3000;
 const router = new Router();
 
 router.get("/", getIndex)
+  .post("/hero", addHero)
   .get("/heroes", getHeroes)
   .get("/hero/:id", getHero)
-  .post("/hero", addHero)
   .put("/hero/:id", updateHero)
   .delete("/hero/:id", deleteHero);
 
