@@ -50,7 +50,21 @@ test("Add hero", async () => {
   await tearDown(app);
 });
 
-test("Update hero", () => {
+test("Update hero", async () => {
+  const app = setup();
+
+  try {
+    const data = await doFetch(
+      "/hero/indy",
+      { name: "Bindiana Bones" },
+      "PUT",
+    );
+
+    assertEquals(data.name, "Bindiana Bones");
+    assertEquals(data.movies.length, 3);
+  } finally {
+    await tearDown(app);
+  }
 });
 
 test("Delete hero", () => {
