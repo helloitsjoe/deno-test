@@ -24,6 +24,7 @@ export const doFetch = async (
     const { message } = await res.json();
     throw new Error(`${res.status}: ${message}`);
   }
+
   return res.json();
 };
 

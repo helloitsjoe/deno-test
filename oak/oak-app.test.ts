@@ -67,7 +67,21 @@ test("Update hero", async () => {
   }
 });
 
-test("Delete hero", () => {
+test("Delete hero", async () => {
+  const app = setup();
+
+  try {
+    const data = await doFetch(
+      "/hero/indy",
+      { name: "Bindiana Bones" },
+      "DELETE",
+    );
+
+    assertEquals(data.name, "Bindiana Bones");
+    assertEquals(data.movies.length, 3);
+  } finally {
+    await tearDown(app);
+  }
 });
 
 test("POST requires data", async () => {
