@@ -1,4 +1,4 @@
-import { makeApp, App } from "./oak-app.ts";
+import { makeApp, makeListener, Listener } from "./oak-app.ts";
 import { doFetch } from "./test-helpers.ts";
 import {
   assert,
@@ -8,6 +8,8 @@ import {
 } from "https://deno.land/std/testing/asserts.ts";
 
 const { test } = Deno;
+
+const testMovies = ["a", "b", "c"];
 
 test("Basic test", () => {
   assertMatch("Hello there", /Hello/);
@@ -20,80 +22,84 @@ test({
   },
 });
 
+// TODO: Make data isolated to each test
+let testId = "";
+
 const setup = () => {
-  const app = makeApp({ port: 1234, shouldLogUrl: false });
-  app.open();
-  return app;
+  const server = makeListener(
+    { app: makeApp(), port: 1234, shouldLogUrl: false },
+  );
+  server.open();
+  return server;
 };
 
-const tearDown = (app: App) => app.close();
+const tearDown = (server: Listener) => server.close();
 
 test("Get heroes", async () => {
-  const app = setup();
+  const server = setup();
 
   const data = await doFetch("/heroes");
 
   assertEquals(data.indy.name, "Indiana Jones");
   assertEquals(data.indy.movies.length, 3);
 
-  await tearDown(app);
+  await tearDown(server);
 });
 
 test("Add hero", async () => {
-  const app = setup();
+  const server = setup();
 
-  const data = await doFetch("/hero", { name: "test" });
+  const data = await doFetch("/hero", { name: "test", movies: testMovies });
 
   assertEquals(data.name, "test");
   assert(data.id, "should have id");
 
-  await tearDown(app);
+  testId = data.id;
+
+  await tearDown(server);
 });
 
 test("Update hero", async () => {
-  const app = setup();
+  const server = setup();
 
-  try {
-    const data = await doFetch(
-      "/hero/indy",
-      { name: "Bindiana Bones" },
-      "PUT",
-    );
+  const data = await doFetch(
+    `/hero/${testId}`,
+    { name: "Test update" },
+    "PUT",
+  );
 
-    assertEquals(data.name, "Bindiana Bones");
-    assertEquals(data.movies.length, 3);
-  } finally {
-    await tearDown(app);
-  }
+  assertEquals(data.name, "Test update");
+  assertEquals(data.movies, testMovies);
+
+  await tearDown(server);
 });
 
 test("Delete hero", async () => {
-  const app = setup();
+  const server = setup();
 
   try {
     const data = await doFetch(
-      "/hero/indy",
-      { name: "Bindiana Bones" },
+      `/hero/${testId}`,
+      { name: "hi" },
       "DELETE",
     );
 
-    assertEquals(data.name, "Bindiana Bones");
-    assertEquals(data.movies.length, 3);
+    assertMatch(data.message, /Hero .+ removed/i);
   } finally {
-    await tearDown(app);
+    await tearDown(server);
   }
 });
 
 test("POST requires data", async () => {
-  const app = setup();
+  const server = setup();
 
   await assertThrowsAsync(
     async () => {
-      const data = await doFetch("/hero", {}, "POST");
+      await doFetch("/hero", {}, "POST");
     },
     Error,
     "400: No data",
   );
 
-  await tearDown(app);
+  await tearDown(server);
 });

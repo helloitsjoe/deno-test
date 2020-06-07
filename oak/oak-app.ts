@@ -8,7 +8,7 @@ import {
   deleteHero,
 } from "./oak-services.ts";
 
-export interface App {
+export interface Listener {
   open: () => Promise<void>;
   close: () => Promise<void>;
 }
@@ -24,11 +24,23 @@ router.get("/", getIndex)
   .put("/hero/:id", updateHero)
   .delete("/hero/:id", deleteHero);
 
-export const makeApp = ({ port = PORT, shouldLogUrl = true }): App => {
+export const makeApp = () => {
   const app = new Application();
   app.use(router.routes());
   app.use(router.allowedMethods());
 
+  return app;
+};
+
+interface ListenerArgs {
+  app?: Application;
+  port?: number;
+  shouldLogUrl?: boolean;
+}
+
+export const makeListener = (
+  { app = makeApp(), port = PORT, shouldLogUrl = true }: ListenerArgs = {},
+): Listener => {
   if (shouldLogUrl) {
     app.addEventListener("listen", ({ hostname, port, secure }) => {
       const protocol = secure ? "https://" : "http://";
